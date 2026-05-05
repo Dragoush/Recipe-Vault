@@ -1,5 +1,22 @@
-node_modules
-dist
-coverage
+
+
 .DS_Store
 *.log
+# Node
+node_modules/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Testing / coverage
+.pytest_cache/
+.coverage
+coverage/
+
+# IDE
+.idea/
+
+# Env
+.env
