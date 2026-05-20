@@ -8,7 +8,7 @@ from app.core.errors import PaginationValidationError, RecipeNotFoundError
 from app.db.session import SessionFactory, database_engine
 from app.repositories.in_memory_recipe_repository import InMemoryRecipeRepository
 from app.repositories.recipe_repository import RecipeRepository
-from app.repositories.sqlalchemy_recipe_repository import SQLAlchemyRecipeRepository
+from app.repositories.api_recipe_repository import ApiRecipeRepository
 
 
 def create_app(repository: RecipeRepository | None = None) -> FastAPI:
@@ -27,7 +27,7 @@ def create_app(repository: RecipeRepository | None = None) -> FastAPI:
     elif settings.repository_backend == "memory":
         app.state.recipe_repository = InMemoryRecipeRepository()
     else:
-        app.state.recipe_repository = SQLAlchemyRecipeRepository(SessionFactory)
+        app.state.recipe_repository = ApiRecipeRepository(SessionFactory)
         app.state.database_engine = database_engine
 
     @app.exception_handler(RecipeNotFoundError)

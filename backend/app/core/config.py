@@ -10,16 +10,15 @@ BASE_DIR = Path(__file__).resolve().parents[2]
 
 def parse_cors_origins(origins_file: str) -> tuple[str, ...]:
     path = Path(origins_file)
-
     if not path.is_absolute():
         path = BASE_DIR / path
+
 
     try:
         with path.open(encoding="utf-8") as file_handle:
             origins = []
-
-            for raw_value in file_handle:
-                origin = raw_value.strip()
+            for line in file_handle:
+                origin = line.strip()
 
                 if not origin or origin.startswith("#"):
                     continue
@@ -27,9 +26,9 @@ def parse_cors_origins(origins_file: str) -> tuple[str, ...]:
                     origin = f"http://{origin}"
 
                 origins.append(origin.rstrip("/"))
-
             if origins:
                 return tuple(origins)
+
     except FileNotFoundError:
         pass
 
@@ -49,12 +48,8 @@ class Settings(BaseSettings):
     default_page_size: int = 4
     max_page_size: int = 50
     repository_backend: Literal["database", "memory"] = "database"
-    database_url: str = (
-        "postgresql+psycopg://postgres:postgres@localhost:5432/recipes_db"
-    )
-    test_database_url: str = (
-        "postgresql+psycopg://postgres:postgres@localhost:5432/recipes_db"
-    )
+    database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/recipes_db"
+    test_database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/recipes_db_test"
     allowed_origins_file: str = "app/core/allowed_ip_list.txt"
 
     @computed_field

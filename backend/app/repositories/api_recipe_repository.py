@@ -13,7 +13,7 @@ from app.repositories.recipe_repository import RecipeRepository
 from app.schemas.filters import RecipeListFilters
 
 
-class SQLAlchemyRecipeRepository(RecipeRepository):
+class ApiRecipeRepository(RecipeRepository):
     def __init__(self, session_factory: sessionmaker[Session]):
         self.session_factory = session_factory
 

@@ -1,12 +1,11 @@
 from fastapi.testclient import TestClient
 
 from app.main import create_app
-from app.repositories.sqlalchemy_recipe_repository import SQLAlchemyRecipeRepository
 from tests.factories import build_recipe
 
 
-def test_statistics_endpoint_returns_empty_payload_shape(client: TestClient):
-    response = client.get("/api/recipes/statistics")
+def test_statistics_endpoint_returns_empty_payload_shape(memory_client: TestClient):
+    response = memory_client.get("/api/recipes/statistics")
 
     assert response.status_code == 200
     assert response.json() == {
@@ -20,9 +19,9 @@ def test_statistics_endpoint_returns_empty_payload_shape(client: TestClient):
 
 
 def test_statistics_endpoint_returns_aggregated_values(
-    sql_repository: SQLAlchemyRecipeRepository,
+    memory_repository,
 ):
-    sql_repository.create(
+    memory_repository.create(
         build_recipe(
             1,
             category="Breakfast",
@@ -32,7 +31,7 @@ def test_statistics_endpoint_returns_aggregated_values(
             total_time_minutes=30,
         )
     )
-    sql_repository.create(
+    memory_repository.create(
         build_recipe(
             2,
             category="Dinner",
@@ -42,7 +41,7 @@ def test_statistics_endpoint_returns_aggregated_values(
             total_time_minutes=50,
         )
     )
-    sql_repository.create(
+    memory_repository.create(
         build_recipe(
             3,
             category="Dinner",
@@ -52,7 +51,7 @@ def test_statistics_endpoint_returns_aggregated_values(
             total_time_minutes=70,
         )
     )
-    repository = sql_repository
+    repository = memory_repository
     client = TestClient(create_app(repository=repository))
 
     response = client.get("/api/recipes/statistics")
