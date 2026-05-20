@@ -1,0 +1,39 @@
+
+
+.DS_Store
+*.log
+# Node
+node_modules/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Testing / coverage
+.pytest_cache/
+.coverage
+coverage/
+
+# IDE
+.idea/
+
+# Env
+.env
+
+# VS Code
+.vscode/
+
+# Build output
+dist/
+build/
+
+# Coverage HTML reports
+htmlcov/
+
+# Python packaging
+*.egg-info/
+.eggs/
+
+# Optional local HTTP scratch files
+*.http
