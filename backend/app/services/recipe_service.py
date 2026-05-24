@@ -64,7 +64,6 @@ class RecipeService:
             raise PaginationValidationError(
                 f"Page size must not exceed {self.max_page_size}."
             )
-
         total_items = self.repository.count(resolved_filters)
         total_pages = max(1, math.ceil(total_items / resolved_page_size))
         current_page = min(page, total_pages)

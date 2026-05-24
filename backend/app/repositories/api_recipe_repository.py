@@ -13,7 +13,7 @@ from app.repositories.recipe_repository import RecipeRepository
 from app.schemas.filters import RecipeListFilters
 
 
-class SQLAlchemyRecipeRepository(RecipeRepository):
+class ApiRecipeRepository(RecipeRepository):
     def __init__(self, session_factory: sessionmaker[Session]):
         self.session_factory = session_factory
 
@@ -208,15 +208,13 @@ class SQLAlchemyRecipeRepository(RecipeRepository):
             servings=recipe_model.servings,
             prep_time_minutes=recipe_model.prep_time_minutes,
             cook_time_minutes=recipe_model.cook_time_minutes,
-            total_time_minutes=recipe_model.prep_time_minutes
-            + recipe_model.cook_time_minutes,
+            total_time_minutes=recipe_model.prep_time_minutes + recipe_model.cook_time_minutes,
             description=recipe_model.description,
             ingredients=[
                 ingredient.line_text for ingredient in recipe_model.ingredient_lines
             ],
             instructions=[
-                instruction.step_text
-                for instruction in recipe_model.instruction_steps
+                instruction.step_text for instruction in recipe_model.instruction_steps
             ],
             created_at=cls._format_timestamp(recipe_model.created_at),
             updated_at=cls._format_timestamp(recipe_model.updated_at),

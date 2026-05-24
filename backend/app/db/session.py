@@ -12,7 +12,6 @@ def create_database_engine(database_url: str) -> Engine:
         pool_pre_ping=True,
     )
 
-
 def create_session_factory(database_url: str) -> sessionmaker[Session]:
     engine = create_database_engine(database_url)
     return sessionmaker(

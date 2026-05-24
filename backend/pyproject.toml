@@ -27,6 +27,9 @@ dev = [
 addopts = "--cov=app --cov-report=term-missing"
 pythonpath = ["."]
 testpaths = ["tests"]
+markers = [
+  "database: marks tests that require a PostgreSQL test database",
+]
 
 [tool.setuptools.packages.find]
 include = ["app*"]

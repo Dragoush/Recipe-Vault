@@ -1,10 +1,14 @@
-from app.repositories.sqlalchemy_recipe_repository import SQLAlchemyRecipeRepository
+import pytest
+
+from app.repositories.api_recipe_repository import ApiRecipeRepository
 from app.schemas.filters import RecipeListFilters
 from tests.factories import build_recipe
 
+pytestmark = pytest.mark.database
+
 
 def test_sqlalchemy_repository_persists_recipe_children_and_timestamps(
-    sql_repository: SQLAlchemyRecipeRepository,
+    sql_repository: ApiRecipeRepository,
 ):
     created_recipe = sql_repository.create(
         build_recipe(
@@ -24,7 +28,7 @@ def test_sqlalchemy_repository_persists_recipe_children_and_timestamps(
 
 
 def test_sqlalchemy_repository_supports_ordering_filters_updates_and_deletes(
-    sql_repository: SQLAlchemyRecipeRepository,
+    sql_repository: ApiRecipeRepository,
 ):
     sql_repository.create(
         build_recipe(
