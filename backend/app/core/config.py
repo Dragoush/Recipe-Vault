@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Literal
 
 from pydantic import computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -47,10 +46,14 @@ class Settings(BaseSettings):
     api_prefix: str = "/api"
     default_page_size: int = 4
     max_page_size: int = 50
-    repository_backend: Literal["database", "memory"] = "database"
     database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/recipes_db"
     test_database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/recipes_db_test"
     allowed_origins_file: str = "app/core/allowed_ip_list.txt"
+    auth_jwt_secret_key: str = "development-only-change-me"
+    auth_access_token_ttl_seconds: int = 900
+    auth_session_ttl_seconds: int = 604800
+    auth_session_inactivity_ttl_seconds: int = 1800
+    password_hash_iterations: int = 200000
 
     @computed_field
     @property

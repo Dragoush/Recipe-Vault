@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 
 from app.core.config import settings
 from app.core.errors import PaginationValidationError, RecipeNotFoundError
+from app.domain.auth import User
 from app.domain.recipe import Recipe
 from app.repositories.recipe_repository import RecipeRepository
 from app.schemas.filters import RecipeListFilters
@@ -45,6 +46,7 @@ class RecipeService:
 
     def list_recipes(
         self,
+        current_user: User,
         page: int = 1,
         page_size: int | None = None,
         filters: RecipeListFilters | None = None,
@@ -64,11 +66,12 @@ class RecipeService:
             raise PaginationValidationError(
                 f"Page size must not exceed {self.max_page_size}."
             )
-        total_items = self.repository.count(resolved_filters)
+        total_items = self.repository.count(current_user.id, resolved_filters)
         total_pages = max(1, math.ceil(total_items / resolved_page_size))
         current_page = min(page, total_pages)
         offset = (current_page - 1) * resolved_page_size
         recipes = self.repository.list_slice(
+            current_user.id,
             offset,
             resolved_page_size,
             resolved_filters,
@@ -82,17 +85,22 @@ class RecipeService:
             total_pages=total_pages,
         )
 
-    def get_recipe(self, recipe_id: str) -> RecipeResponse:
-        recipe = self.repository.get_by_id(recipe_id)
+    def get_recipe(self, current_user: User, recipe_id: str) -> RecipeResponse:
+        recipe = self.repository.get_by_id(recipe_id, current_user.id)
 
         if recipe is None:
             raise RecipeNotFoundError(recipe_id)
 
         return RecipeResponse.from_recipe(recipe)
 
-    def create_recipe(self, payload: RecipeCreateRequest) -> RecipeResponse:
+    def create_recipe(
+        self,
+        current_user: User,
+        payload: RecipeCreateRequest,
+    ) -> RecipeResponse:
         timestamp = self.now_factory()
         recipe = self._build_recipe(
+            owner_user_id=current_user.id,
             payload=payload,
             recipe_id=self.id_generator(),
             created_at=timestamp,
@@ -103,15 +111,17 @@ class RecipeService:
 
     def update_recipe(
         self,
+        current_user: User,
         recipe_id: str,
         payload: RecipeUpdateRequest,
     ) -> RecipeResponse:
-        existing_recipe = self.repository.get_by_id(recipe_id)
+        existing_recipe = self.repository.get_by_id(recipe_id, current_user.id)
 
         if existing_recipe is None:
             raise RecipeNotFoundError(recipe_id)
 
         updated_recipe = self._build_recipe(
+            owner_user_id=current_user.id,
             payload=payload,
             recipe_id=existing_recipe.id,
             created_at=existing_recipe.created_at,
@@ -124,14 +134,15 @@ class RecipeService:
 
         return RecipeResponse.from_recipe(stored_recipe)
 
-    def delete_recipe(self, recipe_id: str) -> None:
-        was_deleted = self.repository.delete(recipe_id)
+    def delete_recipe(self, current_user: User, recipe_id: str) -> None:
+        was_deleted = self.repository.delete(recipe_id, current_user.id)
 
         if not was_deleted:
             raise RecipeNotFoundError(recipe_id)
 
     @staticmethod
     def _build_recipe(
+        owner_user_id: str,
         payload: RecipeCreateRequest | RecipeUpdateRequest,
         recipe_id: str,
         created_at: str,
@@ -139,6 +150,7 @@ class RecipeService:
     ) -> Recipe:
         return Recipe(
             id=recipe_id,
+            owner_user_id=owner_user_id,
             title=payload.title,
             category=payload.category,
             difficulty=payload.difficulty,

@@ -1,6 +1,7 @@
 from collections import Counter
 from statistics import mean
 
+from app.domain.auth import User
 from app.repositories.recipe_repository import RecipeRepository
 from app.schemas.statistics import RecipeStatisticsResponse
 
@@ -9,8 +10,8 @@ class StatisticsService:
     def __init__(self, repository: RecipeRepository):
         self.repository = repository
 
-    def get_statistics(self) -> RecipeStatisticsResponse:
-        recipes = self.repository.list_all()
+    def get_statistics(self, current_user: User) -> RecipeStatisticsResponse:
+        recipes = self.repository.list_all(current_user.id)
 
         if not recipes:
             return RecipeStatisticsResponse(
