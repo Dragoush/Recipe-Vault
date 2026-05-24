@@ -69,7 +69,7 @@ export async function requestJson(
     });
   } catch {
     throw new RecipeApiError(
-      'The server could not be reached. Check that the backend is running and try again.'
+      'The server could not be reached'
     );
   }
 
