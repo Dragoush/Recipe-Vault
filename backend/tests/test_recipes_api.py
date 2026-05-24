@@ -1,6 +1,8 @@
 from fastapi.testclient import TestClient
 
 from app.main import create_app
+from app.repositories.in_memory_recipe_repository import InMemoryRecipeRepository
+from tests.fakes import FakeAuthRepository
 from tests.factories import build_recipe, build_recipe_payload
 
 
@@ -55,12 +57,13 @@ def test_recipe_crud_flow_stays_decoupled_from_frontend(
 
 def test_list_endpoint_returns_paginated_metadata_and_clamped_page(
     memory_repository,
+    authenticated_client_factory,
 ):
     for index in range(1, 6):
         memory_repository.create(build_recipe(index))
 
     repository = memory_repository
-    client = TestClient(create_app(repository=repository))
+    client = authenticated_client_factory(repository)
 
     response = client.get("/api/recipes", params={"page": 99, "pageSize": 2})
 
@@ -84,6 +87,7 @@ def test_list_endpoint_rejects_invalid_pagination_values(
 
 def test_list_endpoint_supports_basic_filters(
     memory_repository,
+    authenticated_client_factory,
 ):
     memory_repository.create(
         build_recipe(
@@ -112,7 +116,7 @@ def test_list_endpoint_supports_basic_filters(
             description="A quick tomato lunch with herbs and toasted bread.",
         )
     )
-    client = TestClient(create_app(repository=memory_repository))
+    client = authenticated_client_factory(memory_repository)
 
     response = client.get(
         "/api/recipes",
@@ -122,3 +126,33 @@ def test_list_endpoint_supports_basic_filters(
     assert response.status_code == 200
     assert response.json()["totalItems"] == 1
     assert [item["id"] for item in response.json()["items"]] == ["recipe-3"]
+
+
+def test_recipe_endpoints_require_authentication():
+    client = TestClient(
+        create_app(
+            repository=InMemoryRecipeRepository(),
+            auth_repository=FakeAuthRepository(),
+        )
+    )
+
+    response = client.get("/api/recipes")
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Authentication required."
+
+
+def test_recipe_access_is_scoped_to_the_authenticated_owner(
+    authenticated_client_factory,
+):
+    repository = InMemoryRecipeRepository(
+        [build_recipe(1, owner_user_id="user-other-owner")]
+    )
+    client = authenticated_client_factory(repository)
+
+    list_response = client.get("/api/recipes")
+    get_response = client.get("/api/recipes/recipe-1")
+
+    assert list_response.status_code == 200
+    assert list_response.json()["totalItems"] == 0
+    assert get_response.status_code == 404

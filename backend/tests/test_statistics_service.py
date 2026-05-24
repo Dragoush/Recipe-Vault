@@ -1,12 +1,13 @@
 from app.repositories.in_memory_recipe_repository import InMemoryRecipeRepository
 from app.services.statistics_service import StatisticsService
-from tests.factories import build_recipe
+from tests.factories import build_recipe, build_user
 
 
 def test_statistics_service_returns_empty_shape_for_empty_repository():
+    user = build_user()
     service = StatisticsService(repository=InMemoryRecipeRepository())
 
-    stats = service.get_statistics()
+    stats = service.get_statistics(user)
 
     assert stats.total_recipes == 0
     assert stats.counts_by_category == {}
@@ -17,6 +18,7 @@ def test_statistics_service_returns_empty_shape_for_empty_repository():
 
 
 def test_statistics_service_aggregates_counts_and_averages():
+    user = build_user()
     repository = InMemoryRecipeRepository(
         [
             build_recipe(1, category="Breakfast", difficulty="Easy", prep_time_minutes=10, cook_time_minutes=20, total_time_minutes=30),
@@ -26,7 +28,7 @@ def test_statistics_service_aggregates_counts_and_averages():
     )
     service = StatisticsService(repository=repository)
 
-    stats = service.get_statistics()
+    stats = service.get_statistics(user)
 
     assert stats.total_recipes == 3
     assert stats.counts_by_category == {"Breakfast": 1, "Dinner": 2}

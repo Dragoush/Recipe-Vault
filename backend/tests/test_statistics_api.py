@@ -20,6 +20,7 @@ def test_statistics_endpoint_returns_empty_payload_shape(memory_client: TestClie
 
 def test_statistics_endpoint_returns_aggregated_values(
     memory_repository,
+    authenticated_client_factory,
 ):
     memory_repository.create(
         build_recipe(
@@ -52,7 +53,7 @@ def test_statistics_endpoint_returns_aggregated_values(
         )
     )
     repository = memory_repository
-    client = TestClient(create_app(repository=repository))
+    client = authenticated_client_factory(repository)
 
     response = client.get("/api/recipes/statistics")
 

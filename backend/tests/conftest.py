@@ -9,12 +9,15 @@ from psycopg import sql
 from sqlalchemy import text
 from sqlalchemy.engine import make_url
 
-from app.main import create_app
 from app.core.config import settings
+from app.core.dependencies import get_current_auth_context
+from app.domain.auth import AuthContext
 from app.db.session import create_database_engine, create_session_factory
 from app.repositories.in_memory_recipe_repository import InMemoryRecipeRepository
 from app.repositories.api_recipe_repository import ApiRecipeRepository
-from tests.factories import build_recipe
+from app.repositories.sqlalchemy_auth_repository import SQLAlchemyAuthRepository
+from app.main import create_app
+from tests.factories import build_auth_session, build_recipe, build_user
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 
@@ -47,18 +50,36 @@ def memory_repository() -> InMemoryRecipeRepository:
 
 
 @pytest.fixture
+def test_auth_context() -> AuthContext:
+    return AuthContext(
+        user=build_user(),
+        session=build_auth_session(),
+    )
+
+
+@pytest.fixture
 def seeded_memory_repository() -> InMemoryRecipeRepository:
     return InMemoryRecipeRepository([build_recipe(1), build_recipe(2)])
 
 
 @pytest.fixture
-def memory_client(memory_repository):
-    return TestClient(create_app(repository=memory_repository))
+def authenticated_client_factory(test_auth_context):
+    def factory(repository) -> TestClient:
+        app = create_app(repository=repository)
+        app.dependency_overrides[get_current_auth_context] = lambda: test_auth_context
+        return TestClient(app)
+
+    return factory
 
 
 @pytest.fixture
-def seeded_memory_client(seeded_memory_repository):
-    return TestClient(create_app(repository=seeded_memory_repository))
+def memory_client(memory_repository, authenticated_client_factory):
+    return authenticated_client_factory(memory_repository)
+
+
+@pytest.fixture
+def seeded_memory_client(seeded_memory_repository, authenticated_client_factory):
+    return authenticated_client_factory(seeded_memory_repository)
 
 
 @pytest.fixture(scope="session")
@@ -118,12 +139,27 @@ def test_session_factory():
 @pytest.fixture
 def clean_test_database(test_database_engine) -> None:
     with test_database_engine.begin() as connection:
-        connection.execute(text("TRUNCATE TABLE recipes RESTART IDENTITY CASCADE"))
+        connection.execute(
+            text("TRUNCATE TABLE auth_sessions, recipes, users RESTART IDENTITY CASCADE")
+        )
+
+
+@pytest.fixture
+def sql_auth_repository(
+    test_session_factory,
+    clean_test_database,
+) -> SQLAlchemyAuthRepository:
+    return SQLAlchemyAuthRepository(test_session_factory)
+
+
+@pytest.fixture
+def persisted_test_user(sql_auth_repository: SQLAlchemyAuthRepository):
+    return sql_auth_repository.create_user(build_user())
 
 
 @pytest.fixture
 def sql_repository(
     test_session_factory,
-    clean_test_database,
+    persisted_test_user,
 ) -> ApiRecipeRepository:
     return ApiRecipeRepository(test_session_factory)

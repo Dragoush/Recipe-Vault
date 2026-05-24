@@ -2,7 +2,7 @@ import pytest
 
 from app.repositories.api_recipe_repository import ApiRecipeRepository
 from app.schemas.filters import RecipeListFilters
-from tests.factories import build_recipe
+from tests.factories import DEFAULT_OWNER_USER_ID, build_recipe
 
 pytestmark = pytest.mark.database
 
@@ -18,7 +18,7 @@ def test_sqlalchemy_repository_persists_recipe_children_and_timestamps(
         )
     )
 
-    stored_recipe = sql_repository.get_by_id(created_recipe.id)
+    stored_recipe = sql_repository.get_by_id(created_recipe.id, DEFAULT_OWNER_USER_ID)
 
     assert stored_recipe is not None
     assert stored_recipe.ingredients == ["Potatoes", "Olive oil", "Rosemary"]
@@ -50,6 +50,7 @@ def test_sqlalchemy_repository_supports_ordering_filters_updates_and_deletes(
     )
 
     filtered_recipes = sql_repository.list_all(
+        DEFAULT_OWNER_USER_ID,
         RecipeListFilters(category="Dinner", search="slow")
     )
 
@@ -70,6 +71,9 @@ def test_sqlalchemy_repository_supports_ordering_filters_updates_and_deletes(
     assert updated_recipe.title == "Slow Braised Dinner Updated"
     assert updated_recipe.difficulty.value == "Medium"
     assert updated_recipe.ingredients == ["Beef", "Stock"]
-    assert sql_repository.delete("recipe-1") is True
-    assert sql_repository.delete("missing") is False
-    assert [recipe.id for recipe in sql_repository.list_slice(0, 10)] == ["recipe-2"]
+    assert sql_repository.delete("recipe-1", DEFAULT_OWNER_USER_ID) is True
+    assert sql_repository.delete("missing", DEFAULT_OWNER_USER_ID) is False
+    assert [
+        recipe.id
+        for recipe in sql_repository.list_slice(DEFAULT_OWNER_USER_ID, 0, 10)
+    ] == ["recipe-2"]

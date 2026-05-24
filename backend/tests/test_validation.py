@@ -1,16 +1,9 @@
-from fastapi.testclient import TestClient
-
-from app.main import create_app
 from app.repositories.in_memory_recipe_repository import InMemoryRecipeRepository
 from tests.factories import build_recipe_payload
 
 
-def make_client() -> TestClient:
-    return TestClient(create_app(repository=InMemoryRecipeRepository()))
-
-
-def test_rejects_unknown_fields_in_recipe_payload():
-    client = make_client()
+def test_rejects_unknown_fields_in_recipe_payload(authenticated_client_factory):
+    client = authenticated_client_factory(InMemoryRecipeRepository())
 
     response = client.post(
         "/api/recipes",
@@ -21,8 +14,8 @@ def test_rejects_unknown_fields_in_recipe_payload():
     assert response.json()["detail"][0]["loc"][-1] == "unexpectedField"
 
 
-def test_rejects_recipe_payloads_with_invalid_lists_after_trimming():
-    client = make_client()
+def test_rejects_recipe_payloads_with_invalid_lists_after_trimming(authenticated_client_factory):
+    client = authenticated_client_factory(InMemoryRecipeRepository())
 
     response = client.post(
         "/api/recipes",
@@ -38,8 +31,8 @@ def test_rejects_recipe_payloads_with_invalid_lists_after_trimming():
     assert any(issue["loc"][-1] == "instructions" for issue in detail)
 
 
-def test_rejects_recipe_payloads_with_invalid_numbers_and_enums():
-    client = make_client()
+def test_rejects_recipe_payloads_with_invalid_numbers_and_enums(authenticated_client_factory):
+    client = authenticated_client_factory(InMemoryRecipeRepository())
 
     response = client.post(
         "/api/recipes",
@@ -59,8 +52,8 @@ def test_rejects_recipe_payloads_with_invalid_numbers_and_enums():
     assert any(issue["loc"][-1] in {"prepTimeMinutes", "prep_time_minutes"} for issue in detail)
 
 
-def test_rejects_non_string_text_and_non_string_collection_entries():
-    client = make_client()
+def test_rejects_non_string_text_and_non_string_collection_entries(authenticated_client_factory):
+    client = authenticated_client_factory(InMemoryRecipeRepository())
 
     response = client.post(
         "/api/recipes",
@@ -76,8 +69,8 @@ def test_rejects_non_string_text_and_non_string_collection_entries():
     assert any(issue["loc"][-1] == "ingredients" for issue in detail)
 
 
-def test_rejects_non_list_collection_payloads():
-    client = make_client()
+def test_rejects_non_list_collection_payloads(authenticated_client_factory):
+    client = authenticated_client_factory(InMemoryRecipeRepository())
 
     response = client.post(
         "/api/recipes",
