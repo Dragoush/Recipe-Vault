@@ -6,7 +6,11 @@ from app.schemas.filters import RecipeListFilters
 
 class RecipeRepository(ABC):
     @abstractmethod
-    def count(self, filters: RecipeListFilters | None = None) -> int:
+    def count(
+        self,
+        owner_user_id: str,
+        filters: RecipeListFilters | None = None,
+    ) -> int:
         """
         Return number of stored recipes
         """
@@ -14,6 +18,7 @@ class RecipeRepository(ABC):
     @abstractmethod
     def list_slice(
         self,
+        owner_user_id: str,
         offset: int,
         limit: int,
         filters: RecipeListFilters | None = None,
@@ -23,11 +28,15 @@ class RecipeRepository(ABC):
         """
 
     @abstractmethod
-    def list_all(self, filters: RecipeListFilters | None = None) -> list[Recipe]:
+    def list_all(
+        self,
+        owner_user_id: str,
+        filters: RecipeListFilters | None = None,
+    ) -> list[Recipe]:
         """"""
 
     @abstractmethod
-    def get_by_id(self, recipe_id: str) -> Recipe | None:
+    def get_by_id(self, recipe_id: str, owner_user_id: str) -> Recipe | None:
         """Return recipe or None"""
 
     @abstractmethod
@@ -39,5 +48,5 @@ class RecipeRepository(ABC):
         """Replace and return an existing recipe or None when it is missing"""
 
     @abstractmethod
-    def delete(self, recipe_id: str) -> bool:
+    def delete(self, recipe_id: str, owner_user_id: str) -> bool:
         """Delete a recipe"""

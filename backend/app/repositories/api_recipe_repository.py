@@ -17,14 +17,23 @@ class ApiRecipeRepository(RecipeRepository):
     def __init__(self, session_factory: sessionmaker[Session]):
         self.session_factory = session_factory
 
-    def count(self, filters: RecipeListFilters | None = None) -> int:
+    def count(
+        self,
+        owner_user_id: str,
+        filters: RecipeListFilters | None = None,
+    ) -> int:
         with self.session_factory() as session:
-            statement = select(func.count(RecipeModel.id)).select_from(RecipeModel)
+            statement = (
+                select(func.count(RecipeModel.id))
+                .select_from(RecipeModel)
+                .where(RecipeModel.owner_user_id == owner_user_id)
+            )
             statement = self._apply_filters(statement, filters)
             return int(session.scalar(statement) or 0)
 
     def list_slice(
         self,
+        owner_user_id: str,
         offset: int,
         limit: int,
         filters: RecipeListFilters | None = None,
@@ -32,6 +41,7 @@ class ApiRecipeRepository(RecipeRepository):
         with self.session_factory() as session:
             statement = (
                 self._recipe_query()
+                .where(RecipeModel.owner_user_id == owner_user_id)
                 .order_by(RecipeModel.created_at.desc(), RecipeModel.id.desc())
                 .offset(offset)
                 .limit(limit)
@@ -39,18 +49,27 @@ class ApiRecipeRepository(RecipeRepository):
             statement = self._apply_filters(statement, filters)
             return [self._to_domain(recipe) for recipe in session.scalars(statement).all()]
 
-    def list_all(self, filters: RecipeListFilters | None = None) -> list[Recipe]:
+    def list_all(
+        self,
+        owner_user_id: str,
+        filters: RecipeListFilters | None = None,
+    ) -> list[Recipe]:
         with self.session_factory() as session:
-            statement = self._recipe_query().order_by(
+            statement = self._recipe_query().where(
+                RecipeModel.owner_user_id == owner_user_id
+            ).order_by(
                 RecipeModel.created_at.desc(),
                 RecipeModel.id.desc(),
             )
             statement = self._apply_filters(statement, filters)
             return [self._to_domain(recipe) for recipe in session.scalars(statement).all()]
 
-    def get_by_id(self, recipe_id: str) -> Recipe | None:
+    def get_by_id(self, recipe_id: str, owner_user_id: str) -> Recipe | None:
         with self.session_factory() as session:
-            statement = self._recipe_query().where(RecipeModel.id == recipe_id)
+            statement = self._recipe_query().where(
+                RecipeModel.id == recipe_id,
+                RecipeModel.owner_user_id == owner_user_id,
+            )
             recipe = session.scalar(statement)
             return self._to_domain(recipe) if recipe is not None else None
 
@@ -65,6 +84,7 @@ class ApiRecipeRepository(RecipeRepository):
                 cook_time_minutes=recipe.cook_time_minutes,
                 created_at=self._parse_timestamp(recipe.created_at),
                 updated_at=self._parse_timestamp(recipe.updated_at),
+                owner_user_id=recipe.owner_user_id,
                 category=self._get_category(session, recipe.category),
                 difficulty=self._get_difficulty(session, recipe.difficulty),
                 ingredient_lines=[
@@ -88,7 +108,10 @@ class ApiRecipeRepository(RecipeRepository):
 
     def update(self, recipe: Recipe) -> Recipe | None:
         with self.session_factory.begin() as session:
-            statement = self._recipe_query().where(RecipeModel.id == recipe.id)
+            statement = self._recipe_query().where(
+                RecipeModel.id == recipe.id,
+                RecipeModel.owner_user_id == recipe.owner_user_id,
+            )
             recipe_model = session.scalar(statement)
 
             if recipe_model is None:
@@ -101,6 +124,7 @@ class ApiRecipeRepository(RecipeRepository):
             recipe_model.cook_time_minutes = recipe.cook_time_minutes
             recipe_model.created_at = self._parse_timestamp(recipe.created_at)
             recipe_model.updated_at = self._parse_timestamp(recipe.updated_at)
+            recipe_model.owner_user_id = recipe.owner_user_id
             recipe_model.category = self._get_category(session, recipe.category)
             recipe_model.difficulty = self._get_difficulty(session, recipe.difficulty)
             recipe_model.ingredient_lines.clear()
@@ -123,9 +147,13 @@ class ApiRecipeRepository(RecipeRepository):
             session.flush()
             return self._to_domain(recipe_model)
 
-    def delete(self, recipe_id: str) -> bool:
+    def delete(self, recipe_id: str, owner_user_id: str) -> bool:
         with self.session_factory.begin() as session:
-            recipe_model = session.get(RecipeModel, recipe_id)
+            statement = select(RecipeModel).where(
+                RecipeModel.id == recipe_id,
+                RecipeModel.owner_user_id == owner_user_id,
+            )
+            recipe_model = session.scalar(statement)
 
             if recipe_model is None:
                 return False
@@ -202,6 +230,7 @@ class ApiRecipeRepository(RecipeRepository):
     def _to_domain(cls, recipe_model: RecipeModel) -> Recipe:
         return Recipe(
             id=recipe_model.id,
+            owner_user_id=recipe_model.owner_user_id,
             title=recipe_model.title,
             category=RecipeCategory(recipe_model.category.name),
             difficulty=RecipeDifficulty(recipe_model.difficulty.name),

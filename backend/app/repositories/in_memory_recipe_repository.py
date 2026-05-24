@@ -16,28 +16,41 @@ class InMemoryRecipeRepository(RecipeRepository):
             self._recipes[recipe_copy.id] = recipe_copy
             self._ordered_ids.append(recipe_copy.id)
 
-    def count(self, filters: RecipeListFilters | None = None) -> int:
-        return len(self._filtered_ordered_ids(filters))
+    def count(
+        self,
+        owner_user_id: str,
+        filters: RecipeListFilters | None = None,
+    ) -> int:
+        return len(self._filtered_ordered_ids(owner_user_id, filters))
 
     def list_slice(
         self,
+        owner_user_id: str,
         offset: int,
         limit: int,
         filters: RecipeListFilters | None = None,
     ) -> list[Recipe]:
-        ordered_ids = self._filtered_ordered_ids(filters)
+        ordered_ids = self._filtered_ordered_ids(owner_user_id, filters)
         recipe_ids = ordered_ids[offset : offset + limit]
         return [self._copy_recipe(self._recipes[recipe_id]) for recipe_id in recipe_ids]
 
-    def list_all(self, filters: RecipeListFilters | None = None) -> list[Recipe]:
+    def list_all(
+        self,
+        owner_user_id: str,
+        filters: RecipeListFilters | None = None,
+    ) -> list[Recipe]:
         return [
             self._copy_recipe(self._recipes[recipe_id])
-            for recipe_id in self._filtered_ordered_ids(filters)
+            for recipe_id in self._filtered_ordered_ids(owner_user_id, filters)
         ]
 
-    def get_by_id(self, recipe_id: str) -> Recipe | None:
+    def get_by_id(self, recipe_id: str, owner_user_id: str) -> Recipe | None:
         recipe = self._recipes.get(recipe_id)
-        return self._copy_recipe(recipe) if recipe else None
+
+        if recipe is None or recipe.owner_user_id != owner_user_id:
+            return None
+
+        return self._copy_recipe(recipe)
 
     def create(self, recipe: Recipe) -> Recipe:
         recipe_copy = self._copy_recipe(recipe)
@@ -50,15 +63,19 @@ class InMemoryRecipeRepository(RecipeRepository):
         return self._copy_recipe(recipe_copy)
 
     def update(self, recipe: Recipe) -> Recipe | None:
-        if recipe.id not in self._recipes:
+        existing_recipe = self._recipes.get(recipe.id)
+
+        if existing_recipe is None or existing_recipe.owner_user_id != recipe.owner_user_id:
             return None
 
         recipe_copy = self._copy_recipe(recipe)
         self._recipes[recipe_copy.id] = recipe_copy
         return self._copy_recipe(recipe_copy)
 
-    def delete(self, recipe_id: str) -> bool:
-        if recipe_id not in self._recipes:
+    def delete(self, recipe_id: str, owner_user_id: str) -> bool:
+        recipe = self._recipes.get(recipe_id)
+
+        if recipe is None or recipe.owner_user_id != owner_user_id:
             return False
 
         del self._recipes[recipe_id]
@@ -67,21 +84,26 @@ class InMemoryRecipeRepository(RecipeRepository):
 
     def _filtered_ordered_ids(
         self,
+        owner_user_id: str,
         filters: RecipeListFilters | None,
     ) -> list[str]:
-        if filters is None or filters.is_empty:
-            return list(self._ordered_ids)
-
         filtered_ids: list[str] = []
-        search_value = filters.search.lower() if filters.search else None
+        search_value = filters.search.lower() if filters and filters.search else None
 
         for recipe_id in self._ordered_ids:
             recipe = self._recipes[recipe_id]
 
-            if filters.category is not None and recipe.category != filters.category:
+            if recipe.owner_user_id != owner_user_id:
                 continue
 
-            if filters.difficulty is not None and recipe.difficulty != filters.difficulty:
+            if filters is not None and filters.category is not None and recipe.category != filters.category:
+                continue
+
+            if (
+                filters is not None
+                and filters.difficulty is not None
+                and recipe.difficulty != filters.difficulty
+            ):
                 continue
 
             if search_value is not None:
