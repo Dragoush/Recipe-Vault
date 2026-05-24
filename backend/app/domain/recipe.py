@@ -20,6 +20,7 @@ class RecipeDifficulty(str, Enum):
 @dataclass(slots=True)
 class Recipe:
     id: str
+    owner_user_id: str
     title: str
     category: RecipeCategory
     difficulty: RecipeDifficulty

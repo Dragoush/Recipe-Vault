@@ -1,6 +1,8 @@
 from datetime import datetime
+
 from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from app.db.base import Base
 
 
@@ -31,6 +33,11 @@ class RecipeModel(Base):
     cook_time_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    owner_user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     category_id: Mapped[int] = mapped_column(
         ForeignKey("categories.id"),
         nullable=False,
@@ -40,6 +47,7 @@ class RecipeModel(Base):
         nullable=False,
     )
 
+    owner = relationship("UserModel", back_populates="recipes")
     category = relationship("CategoryModel", back_populates="recipes")
     difficulty = relationship("DifficultyLevelModel", back_populates="recipes")
     ingredient_lines = relationship(
