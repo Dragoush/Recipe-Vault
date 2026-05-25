@@ -4,6 +4,7 @@ import { toRecipeRequestPayload } from './recipeFormSchema';
 
 export async function listRecipes({ page = 1, pageSize = 4 } = {}) {
   return requestJson(API_ROUTES.recipes, {
+    requiresAuth: true,
     searchParams: {
       page,
       pageSize
@@ -13,7 +14,9 @@ export async function listRecipes({ page = 1, pageSize = 4 } = {}) {
 
 export async function getRecipeById(recipeId) {
   try {
-    return await requestJson(`${API_ROUTES.recipes}/${recipeId}`);
+    return await requestJson(`${API_ROUTES.recipes}/${recipeId}`, {
+      requiresAuth: true
+    });
   } catch (error) {
     if (error instanceof RecipeApiError && error.status === 404) {
       return null;
@@ -24,12 +27,15 @@ export async function getRecipeById(recipeId) {
 }
 
 export async function getStatistics() {
-  return requestJson(API_ROUTES.recipeStatistics);
+  return requestJson(API_ROUTES.recipeStatistics, {
+    requiresAuth: true
+  });
 }
 
 export async function createRecipe(values) {
   return requestJson(API_ROUTES.recipes, {
     method: 'POST',
+    requiresAuth: true,
     body: toRecipeRequestPayload(values)
   });
 }
@@ -38,6 +44,7 @@ export async function updateRecipe(recipeId, values) {
   try {
     return await requestJson(`${API_ROUTES.recipes}/${recipeId}`, {
       method: 'PUT',
+      requiresAuth: true,
       body: toRecipeRequestPayload(values)
     });
   } catch (error) {
@@ -52,7 +59,8 @@ export async function updateRecipe(recipeId, values) {
 export async function deleteRecipe(recipeId) {
   try {
     await requestJson(`${API_ROUTES.recipes}/${recipeId}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      requiresAuth: true
     });
 
     return true;

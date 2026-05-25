@@ -1,7 +1,6 @@
 import {
   __resetActiveRecipeSource,
   __setActiveRecipeSource,
-  ramRecipeSource,
   recipeSource
 } from '../features/recipes/activeRecipeSource';
 
@@ -28,13 +27,5 @@ describe('activeRecipeSource', () => {
     await expect(recipeSource.createRecipe({})).resolves.toBe('create');
     await expect(recipeSource.updateRecipe('recipe-1', {})).resolves.toBe('update');
     await expect(recipeSource.deleteRecipe('recipe-1')).resolves.toBe('delete');
-  });
-
-  test('keeps the RAM source export available for manual switching', () => {
-    expect(ramRecipeSource).toHaveProperty('listRecipes');
-    expect(ramRecipeSource).toHaveProperty('getStatistics');
-    expect(ramRecipeSource).toHaveProperty('createRecipe');
-    expect(ramRecipeSource).toHaveProperty('updateRecipe');
-    expect(ramRecipeSource).toHaveProperty('deleteRecipe');
   });
 });

@@ -1,11 +1,5 @@
 import * as apiRecipeSource from './recipeApiSource';
-import * as ramRecipeSource from './recipeRamSource';
-
-
-//this one for api
 let activeRecipeSource = apiRecipeSource;
-//this one for ram
-//let activeRecipeSource = ramRecipeSource;
 
 export const recipeSource = {
   listRecipes: (...args) => activeRecipeSource.listRecipes(...args),
@@ -23,5 +17,3 @@ export function __setActiveRecipeSource(nextRecipeSource) {
 export function __resetActiveRecipeSource() {
   activeRecipeSource = apiRecipeSource;
 }
-
-export { ramRecipeSource };

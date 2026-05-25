@@ -20,14 +20,14 @@ describe('Not found routes', () => {
   });
 
   test('shows the fallback page for an unknown route', () => {
-    renderRoute('/missing');
+    renderRoute('/missing', { authSession: null });
 
     expect(
       screen.getByRole('heading', { name: 'That page does not exist.' })
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('link', { name: /Go back to recipes/i })
-    ).toHaveAttribute('href', '/recipes');
+      screen.getByRole('link', { name: /Go back home/i })
+    ).toHaveAttribute('href', '/');
   });
 
   test('shows the fallback page for a missing recipe detail route', async () => {
