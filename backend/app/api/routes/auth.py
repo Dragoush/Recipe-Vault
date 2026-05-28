@@ -1,13 +1,10 @@
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Depends, Request, Response, status
 
+from app.core.auth_cookies import clear_refresh_cookie, set_refresh_cookie
+from app.core.config import settings
 from app.core.dependencies import get_auth_service, get_current_auth_context
-from app.schemas.auth import (
-    AuthTokensResponse,
-    AuthUserResponse,
-    LoginRequest,
-    RefreshTokenRequest,
-    RegisterRequest,
-)
+from app.core.errors import AuthenticationError
+from app.schemas.auth import AuthTokensResponse, AuthUserResponse, LoginRequest, RegisterRequest
 from app.services.auth_service import AuthService
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -28,28 +25,40 @@ def register_user(
 @router.post("/login", response_model=AuthTokensResponse)
 def login_user(
     payload: LoginRequest,
+    response: Response,
     service: AuthService = Depends(get_auth_service),
 ) -> AuthTokensResponse:
-    return AuthTokensResponse.from_authenticated_session(service.login_user(payload))
+    authenticated_session = service.login_user(payload)
+    set_refresh_cookie(response, authenticated_session.tokens.refresh_token)
+    return AuthTokensResponse.from_authenticated_session(authenticated_session)
 
 
 @router.post("/refresh", response_model=AuthTokensResponse)
 def refresh_session(
-    payload: RefreshTokenRequest,
+    request: Request,
+    response: Response,
     service: AuthService = Depends(get_auth_service),
 ) -> AuthTokensResponse:
-    return AuthTokensResponse.from_authenticated_session(
-        service.refresh_session(payload.refresh_token)
-    )
+    refresh_token = request.cookies.get(settings.auth_refresh_cookie_name)
+
+    if not refresh_token:
+        raise AuthenticationError("Refresh token is missing.")
+
+    authenticated_session = service.refresh_session(refresh_token)
+    set_refresh_cookie(response, authenticated_session.tokens.refresh_token)
+    return AuthTokensResponse.from_authenticated_session(authenticated_session)
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 def logout_user(
+    response: Response,
     auth_context=Depends(get_current_auth_context),
     service: AuthService = Depends(get_auth_service),
 ) -> Response:
     service.logout_session(auth_context.session.id)
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    clear_refresh_cookie(response)
+    response.status_code = status.HTTP_204_NO_CONTENT
+    return response
 
 
 @router.get("/me", response_model=AuthUserResponse)

@@ -1,9 +1,12 @@
 from fastapi.testclient import TestClient
 
+from app.core.config import settings
 from app.main import create_app
 from app.repositories.in_memory_recipe_repository import InMemoryRecipeRepository
 from tests.fakes import FakeAuthRepository
 from tests.factories import build_recipe, build_recipe_payload
+
+RECIPES_BASE_PATH = f"{settings.api_prefix}/recipes"
 
 
 def test_root_endpoint_returns_backend_identity(memory_client: TestClient):
@@ -17,7 +20,7 @@ def test_recipe_crud_flow_stays_decoupled_from_frontend(
     seeded_memory_client: TestClient,
 ):
     create_response = seeded_memory_client.post(
-        "/api/recipes",
+        RECIPES_BASE_PATH,
         json=build_recipe_payload(),
     )
 
@@ -29,12 +32,12 @@ def test_recipe_crud_flow_stays_decoupled_from_frontend(
 
     recipe_id = created_recipe["id"]
 
-    get_response = seeded_memory_client.get(f"/api/recipes/{recipe_id}")
+    get_response = seeded_memory_client.get(f"{RECIPES_BASE_PATH}/{recipe_id}")
     assert get_response.status_code == 200
     assert get_response.json()["title"] == "Roasted Potatoes"
 
     update_response = seeded_memory_client.put(
-        f"/api/recipes/{recipe_id}",
+        f"{RECIPES_BASE_PATH}/{recipe_id}",
         json=build_recipe_payload(
             title="Updated Potatoes",
             difficulty="Medium",
@@ -46,11 +49,11 @@ def test_recipe_crud_flow_stays_decoupled_from_frontend(
     assert update_response.json()["title"] == "Updated Potatoes"
     assert update_response.json()["difficulty"] == "Medium"
 
-    delete_response = seeded_memory_client.delete(f"/api/recipes/{recipe_id}")
+    delete_response = seeded_memory_client.delete(f"{RECIPES_BASE_PATH}/{recipe_id}")
     assert delete_response.status_code == 204
     assert delete_response.text == ""
 
-    missing_response = seeded_memory_client.get(f"/api/recipes/{recipe_id}")
+    missing_response = seeded_memory_client.get(f"{RECIPES_BASE_PATH}/{recipe_id}")
     assert missing_response.status_code == 404
     assert missing_response.json()["detail"] == f'Recipe "{recipe_id}" was not found.'
 
@@ -65,7 +68,7 @@ def test_list_endpoint_returns_paginated_metadata_and_clamped_page(
     repository = memory_repository
     client = authenticated_client_factory(repository)
 
-    response = client.get("/api/recipes", params={"page": 99, "pageSize": 2})
+    response = client.get(RECIPES_BASE_PATH, params={"page": 99, "pageSize": 2})
 
     assert response.status_code == 200
     body = response.json()
@@ -79,7 +82,7 @@ def test_list_endpoint_returns_paginated_metadata_and_clamped_page(
 def test_list_endpoint_rejects_invalid_pagination_values(
     seeded_memory_client: TestClient,
 ):
-    response = seeded_memory_client.get("/api/recipes", params={"page": 0, "pageSize": 2})
+    response = seeded_memory_client.get(RECIPES_BASE_PATH, params={"page": 0, "pageSize": 2})
 
     assert response.status_code == 422
     assert response.json()["detail"] == "Page must be at least 1."
@@ -119,7 +122,7 @@ def test_list_endpoint_supports_basic_filters(
     client = authenticated_client_factory(memory_repository)
 
     response = client.get(
-        "/api/recipes",
+        RECIPES_BASE_PATH,
         params={"category": "Lunch", "difficulty": "Easy", "search": "tomato"},
     )
 
@@ -136,7 +139,7 @@ def test_recipe_endpoints_require_authentication():
         )
     )
 
-    response = client.get("/api/recipes")
+    response = client.get(RECIPES_BASE_PATH)
 
     assert response.status_code == 401
     assert response.json()["detail"] == "Authentication required."
@@ -150,8 +153,8 @@ def test_recipe_access_is_scoped_to_the_authenticated_owner(
     )
     client = authenticated_client_factory(repository)
 
-    list_response = client.get("/api/recipes")
-    get_response = client.get("/api/recipes/recipe-1")
+    list_response = client.get(RECIPES_BASE_PATH)
+    get_response = client.get(f"{RECIPES_BASE_PATH}/recipe-1")
 
     assert list_response.status_code == 200
     assert list_response.json()["totalItems"] == 0

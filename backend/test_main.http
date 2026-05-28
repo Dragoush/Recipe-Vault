@@ -1,0 +1,28 @@
+# Test your FastAPI endpoints
+
+GET http://127.0.0.1:8000/
+Accept: application/json
+
+###
+
+GET http://127.0.0.1:8000/api/recipes?page=1&pageSize=4
+Accept: application/json
+
+###
+
+POST http://127.0.0.1:8000/api/recipes
+Content-Type: application/json
+
+{
+  "title": "Roasted Potatoes",
+  "category": "Dinner",
+  "difficulty": "Easy",
+  "servings": 4,
+  "prepTimeMinutes": 15,
+  "cookTimeMinutes": 35,
+  "description": "Crispy roasted potatoes with herbs and a golden finish.",
+  "ingredients": ["Potatoes", "Olive oil", "Rosemary"],
+  "instructions": ["Cut the potatoes.", "Roast until golden."]
+}
+
+###

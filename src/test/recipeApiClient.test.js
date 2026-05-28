@@ -65,6 +65,26 @@ describe('recipeApiClient', () => {
     );
   });
 
+  test('includes browser credentials when requested', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      text: vi.fn().mockResolvedValue(JSON.stringify({ accessToken: 'token' }))
+    });
+
+    await sharedRequestJson('/api/auth/refresh', {
+      method: 'POST',
+      includeCredentials: true
+    });
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      expect.stringMatching(/\/api\/auth\/refresh$/),
+      expect.objectContaining({
+        method: 'POST',
+        credentials: 'include'
+      })
+    );
+  });
+
   test('returns null for empty successful responses', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: true,

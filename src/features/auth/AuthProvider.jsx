@@ -7,16 +7,10 @@ import {
   useState
 } from 'react';
 import {
-  ApiError,
   configureApiClient,
   resetApiClientConfiguration
 } from '../api/apiClient';
 import * as authApi from './authApi';
-import {
-  clearStoredRefreshToken,
-  getStoredRefreshToken,
-  setStoredRefreshToken
-} from './authStorage';
 
 export const AuthContext = createContext(null);
 
@@ -25,7 +19,6 @@ function createAuthenticatedState(session, notice = '') {
     status: 'authenticated',
     user: session.user,
     accessToken: session.accessToken,
-    refreshToken: session.refreshToken,
     notice
   };
 }
@@ -35,7 +28,6 @@ function createGuestState(notice = '') {
     status: 'guest',
     user: null,
     accessToken: null,
-    refreshToken: null,
     notice
   };
 }
@@ -50,7 +42,6 @@ export function createTestSession(overrides = {}) {
       updatedAt: '2026-05-24T12:00:00.000Z'
     },
     accessToken: 'access-token',
-    refreshToken: 'refresh-token',
     tokenType: 'bearer',
     accessTokenExpiresIn: 900,
     ...overrides
@@ -73,7 +64,6 @@ export default function AuthProvider({
         status: 'bootstrapping',
         user: null,
         accessToken: null,
-        refreshToken: null,
         notice: ''
       };
     }
@@ -81,17 +71,14 @@ export default function AuthProvider({
     return createGuestState();
   });
   const accessTokenRef = useRef(authState.accessToken);
-  const refreshTokenRef = useRef(authState.refreshToken);
   const refreshPromiseRef = useRef(null);
 
   useEffect(() => {
     accessTokenRef.current = authState.accessToken;
-    refreshTokenRef.current = authState.refreshToken;
-  }, [authState.accessToken, authState.refreshToken]);
+  }, [authState.accessToken]);
 
   const clearAuthentication = useCallback(
     ({ reason = 'manual', notice = '' } = {}) => {
-      clearStoredRefreshToken();
       setAuthState((currentState) => {
         if (currentState.status === 'guest' && !notice) {
           return currentState;
@@ -110,7 +97,6 @@ export default function AuthProvider({
   );
 
   const applyAuthenticatedSession = useCallback((session) => {
-    setStoredRefreshToken(session.refreshToken);
     setAuthState(createAuthenticatedState(session));
   }, []);
 
@@ -120,24 +106,8 @@ export default function AuthProvider({
         return refreshPromiseRef.current;
       }
 
-      const storedRefreshToken =
-        refreshTokenRef.current ?? getStoredRefreshToken();
-
-      if (!storedRefreshToken) {
-        const error = new ApiError('Authentication required.', {
-          status: 401,
-          detail: 'Authentication required.'
-        });
-
-        if (reason !== 'manual') {
-          clearAuthentication({ reason: 'expired' });
-        }
-
-        throw error;
-      }
-
       const pendingRefresh = api
-        .refresh(storedRefreshToken)
+        .refresh()
         .then((session) => {
           applyAuthenticatedSession(session);
           return session;
@@ -179,15 +149,6 @@ export default function AuthProvider({
 
   useEffect(() => {
     if (!bootstrapOnMount) {
-      return;
-    }
-
-    const storedRefreshToken = getStoredRefreshToken();
-
-    if (!storedRefreshToken) {
-      setAuthState((currentState) =>
-        currentState.status === 'bootstrapping' ? createGuestState() : currentState
-      );
       return;
     }
 

@@ -36,4 +36,5 @@ htmlcov/
 .eggs/
 
 # Optional local HTTP scratch files
-*.http
+*.http"backend/certs/" 
+"certs/" 

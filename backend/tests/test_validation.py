@@ -1,12 +1,15 @@
+from app.core.config import settings
 from app.repositories.in_memory_recipe_repository import InMemoryRecipeRepository
 from tests.factories import build_recipe_payload
+
+RECIPES_BASE_PATH = f"{settings.api_prefix}/recipes"
 
 
 def test_rejects_unknown_fields_in_recipe_payload(authenticated_client_factory):
     client = authenticated_client_factory(InMemoryRecipeRepository())
 
     response = client.post(
-        "/api/recipes",
+        RECIPES_BASE_PATH,
         json=build_recipe_payload(unexpectedField="not allowed"),
     )
 
@@ -18,7 +21,7 @@ def test_rejects_recipe_payloads_with_invalid_lists_after_trimming(authenticated
     client = authenticated_client_factory(InMemoryRecipeRepository())
 
     response = client.post(
-        "/api/recipes",
+        RECIPES_BASE_PATH,
         json=build_recipe_payload(
             ingredients=["Potatoes", "   "],
             instructions=["  ", "Bake until crisp."],
@@ -35,7 +38,7 @@ def test_rejects_recipe_payloads_with_invalid_numbers_and_enums(authenticated_cl
     client = authenticated_client_factory(InMemoryRecipeRepository())
 
     response = client.post(
-        "/api/recipes",
+        RECIPES_BASE_PATH,
         json=build_recipe_payload(
             category="Brunch",
             difficulty="Expert",
@@ -56,7 +59,7 @@ def test_rejects_non_string_text_and_non_string_collection_entries(authenticated
     client = authenticated_client_factory(InMemoryRecipeRepository())
 
     response = client.post(
-        "/api/recipes",
+        RECIPES_BASE_PATH,
         json=build_recipe_payload(
             title=123,
             ingredients=[1, "Salt"],
@@ -73,7 +76,7 @@ def test_rejects_non_list_collection_payloads(authenticated_client_factory):
     client = authenticated_client_factory(InMemoryRecipeRepository())
 
     response = client.post(
-        "/api/recipes",
+        RECIPES_BASE_PATH,
         json=build_recipe_payload(ingredients="Potatoes"),
     )
 

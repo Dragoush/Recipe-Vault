@@ -41,10 +41,6 @@ class LoginRequest(ApiSchema):
         return value
 
 
-class RefreshTokenRequest(ApiSchema):
-    refresh_token: str = Field(min_length=20, max_length=512)
-
-
 class AuthUserResponse(ApiSchema):
     id: str
     username: str
@@ -60,7 +56,6 @@ class AuthUserResponse(ApiSchema):
 class AuthTokensResponse(ApiSchema):
     user: AuthUserResponse
     access_token: str
-    refresh_token: str
     token_type: str
     access_token_expires_in: int
 
@@ -72,7 +67,6 @@ class AuthTokensResponse(ApiSchema):
         return cls(
             user=AuthUserResponse.from_user(session.user),
             access_token=session.tokens.access_token,
-            refresh_token=session.tokens.refresh_token,
             token_type=session.tokens.token_type,
             access_token_expires_in=session.tokens.access_token_expires_in,
         )

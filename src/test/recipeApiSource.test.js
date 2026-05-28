@@ -43,7 +43,7 @@ describe('recipeApiSource', () => {
     const result = await listRecipes({ page: 3, pageSize: 6 });
 
     expect(result).toEqual({ items: [] });
-    expect(requestJson).toHaveBeenCalledWith('/api/recipes', {
+    expect(requestJson).toHaveBeenCalledWith('recipes', {
       requiresAuth: true,
       searchParams: {
         page: 3,
@@ -70,7 +70,7 @@ describe('recipeApiSource', () => {
     requestJson.mockResolvedValue({ totalRecipes: 6 });
 
     await expect(getStatistics()).resolves.toEqual({ totalRecipes: 6 });
-    expect(requestJson).toHaveBeenCalledWith('/api/recipes/statistics', {
+    expect(requestJson).toHaveBeenCalledWith('recipes/statistics', {
       requiresAuth: true
     });
   });
@@ -86,7 +86,7 @@ describe('recipeApiSource', () => {
 
     await createRecipe(validRecipeValues);
 
-    expect(requestJson).toHaveBeenCalledWith('/api/recipes', {
+    expect(requestJson).toHaveBeenCalledWith('recipes', {
       method: 'POST',
       requiresAuth: true,
       body: toRecipeRequestPayload(validRecipeValues)
@@ -107,7 +107,7 @@ describe('recipeApiSource', () => {
       id: 'recipe-1'
     });
     await expect(updateRecipe('recipe-1', validRecipeValues)).resolves.toBeNull();
-    expect(requestJson).toHaveBeenNthCalledWith(1, '/api/recipes/recipe-1', {
+    expect(requestJson).toHaveBeenNthCalledWith(1, 'recipes/recipe-1', {
       method: 'PUT',
       requiresAuth: true,
       body: toRecipeRequestPayload(validRecipeValues)
@@ -126,7 +126,7 @@ describe('recipeApiSource', () => {
 
     await expect(deleteRecipe('recipe-1')).resolves.toBe(true);
     await expect(deleteRecipe('recipe-1')).resolves.toBe(false);
-    expect(requestJson).toHaveBeenNthCalledWith(1, '/api/recipes/recipe-1', {
+    expect(requestJson).toHaveBeenNthCalledWith(1, 'recipes/recipe-1', {
       method: 'DELETE',
       requiresAuth: true
     });

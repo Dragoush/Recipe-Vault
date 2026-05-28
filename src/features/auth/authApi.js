@@ -2,11 +2,11 @@ import { requestJson } from '../api/apiClient';
 import { toAuthRequestPayload } from './authFormSchema';
 
 export const AUTH_ROUTES = {
-  register: '/api/auth/register',
-  login: '/api/auth/login',
-  refresh: '/api/auth/refresh',
-  logout: '/api/auth/logout',
-  me: '/api/auth/me'
+  register: 'auth/register',
+  login: 'auth/login',
+  refresh: 'auth/refresh',
+  logout: 'auth/logout',
+  me: 'auth/me'
 };
 
 export async function register(values) {
@@ -21,15 +21,16 @@ export async function login(values) {
   return requestJson(AUTH_ROUTES.login, {
     method: 'POST',
     body: toAuthRequestPayload(values),
-    retryOnUnauthorized: false
+    retryOnUnauthorized: false,
+    includeCredentials: true
   });
 }
 
-export async function refresh(refreshToken) {
+export async function refresh() {
   return requestJson(AUTH_ROUTES.refresh, {
     method: 'POST',
-    body: { refreshToken },
-    retryOnUnauthorized: false
+    retryOnUnauthorized: false,
+    includeCredentials: true
   });
 }
 
@@ -37,7 +38,8 @@ export async function logout() {
   return requestJson(AUTH_ROUTES.logout, {
     method: 'POST',
     requiresAuth: true,
-    retryOnUnauthorized: false
+    retryOnUnauthorized: false,
+    includeCredentials: true
   });
 }
 

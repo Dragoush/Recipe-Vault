@@ -84,7 +84,8 @@ async function executeRequest(
     searchParams,
     headers,
     accessToken,
-    requiresAuth
+    requiresAuth,
+    includeCredentials = false
   }
 ) {
   const requestHeaders = new Headers(headers ?? {});
@@ -100,14 +101,20 @@ async function executeRequest(
 
   const resolvedHeaders = Object.fromEntries(requestHeaders.entries());
 
-  const response = await fetch(buildApiUrl(path, searchParams), {
+  const requestInit = {
     method,
     headers:
       hasHeaders || body !== undefined || (requiresAuth && accessToken)
         ? resolvedHeaders
         : undefined,
     body: body !== undefined ? JSON.stringify(body) : undefined
-  });
+  };
+
+  if (includeCredentials) {
+    requestInit.credentials = 'include';
+  }
+
+  const response = await fetch(buildApiUrl(path, searchParams), requestInit);
   const data = await readJsonSafely(response);
 
   return {
@@ -124,7 +131,8 @@ export async function requestJson(
     searchParams,
     headers,
     requiresAuth = false,
-    retryOnUnauthorized = true
+    retryOnUnauthorized = true,
+    includeCredentials = false
   } = {}
 ) {
   let accessToken = requiresAuth ? clientConfig.getAccessToken?.() : null;
@@ -137,7 +145,8 @@ export async function requestJson(
       searchParams,
       headers,
       accessToken,
-      requiresAuth
+      requiresAuth,
+      includeCredentials
     });
   } catch {
     throw new ApiError(
@@ -161,7 +170,8 @@ export async function requestJson(
         searchParams,
         headers,
         accessToken,
-        requiresAuth
+        requiresAuth,
+        includeCredentials
       });
     } catch (error) {
       if (error instanceof ApiError) {
