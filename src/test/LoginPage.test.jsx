@@ -67,4 +67,24 @@ describe('Login page', () => {
       await screen.findByText('Invalid username or password.')
     ).toBeInTheDocument();
   });
+
+  test('does not show a session-expired notice on a fresh guest visit', async () => {
+    mockAuthApi.refresh.mockRejectedValue({
+      status: 401,
+      message: 'Refresh token is missing.'
+    });
+
+    renderRoute('/login', {
+      authApi: mockAuthApi,
+      authSession: null,
+      bootstrapOnMount: true
+    });
+
+    expect(
+      await screen.findByRole('heading', { name: 'Welcome back!' })
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('Your session expired. Please sign in again.')
+    ).not.toBeInTheDocument();
+  });
 });

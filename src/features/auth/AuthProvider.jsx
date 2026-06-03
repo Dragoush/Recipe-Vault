@@ -119,8 +119,12 @@ export default function AuthProvider({
             error?.status === 403;
 
           if (shouldClear) {
+            const isExpiredSession =
+              reason !== 'bootstrap' &&
+              (error?.status === 401 || error?.status === 403);
+
             clearAuthentication({
-              reason: error?.status === 401 || error?.status === 403 ? 'expired' : 'manual'
+              reason: isExpiredSession ? 'expired' : 'manual'
             });
           }
 
