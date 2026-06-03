@@ -1,1 +1,2 @@
+https://recipe-vault.vercel.app
 localhost:5173
